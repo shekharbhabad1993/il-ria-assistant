@@ -1,0 +1,7 @@
+{
+  "name": "ICICI Lombard Elevate Assistant",
+  "description": "A professional insurance portal for ICICI Lombard's Elevate Health Policy featuring an AI-powered chatbot with multilingual text and high-quality audio responses.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
