@@ -443,19 +443,6 @@ const Chatbot: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Listening Indicator Banner */}
-                {isLive && (
-                  <div className="mt-3 flex items-center justify-center gap-2 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/20 animate-in fade-in duration-300">
-                    <div className="flex gap-1">
-                      <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-green-400">
-                      RIA is listening • Speak now
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Messages Area */}
@@ -527,9 +514,9 @@ const Chatbot: React.FC = () => {
                 {!isLoading && !isLive && (
                   <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
                     {suggestions.map((q, idx) => (
-                      <button 
-                    key={idx} 
-                    onClick={() => handleSendText(q)} 
+                      <button
+                    key={idx}
+                    onClick={() => handleSendText(q)}
                     className="whitespace-nowrap px-4 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-[10px] font-black uppercase tracking-widest hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm"
                   >
                     {q}
@@ -537,6 +524,21 @@ const Chatbot: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {/* Listening Indicator - Shows near microphone button when recording */}
+                {isLive && (
+                  <div className="mb-3 flex items-center justify-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200 animate-in fade-in duration-300">
+                    <div className="flex gap-1">
+                      <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-green-700">
+                      RIA is listening • Speak now
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex gap-3 items-center">
                   <button
                     onClick={toggleLiveSession}
