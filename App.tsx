@@ -4,45 +4,43 @@ import Chatbot from './components/Chatbot.tsx';
 
 // --- UI COMPONENTS ---
 
-const Nav: React.FC<{ 
-  onLoginClick: () => void; 
+const Nav: React.FC<{
+  onLoginClick: () => void;
   onHomeClick: () => void;
   isLoggedIn: boolean;
 }> = ({ onLoginClick, onHomeClick, isLoggedIn }) => (
-  <nav className="bg-white border-b px-4 md:px-10 py-2 flex items-center justify-between sticky top-0 z-[60] shadow-sm">
+  <nav className="border-b px-4 md:px-10 py-2 flex items-center justify-between sticky top-0 z-[60] shadow-sm" style={{ background: 'linear-gradient(to bottom, #f58220 -18%, #b02a30 127%)' }}>
     <div className="flex items-center gap-8">
       <div className="flex items-center gap-3 cursor-pointer" onClick={onHomeClick}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg icici-maroon-bg flex items-center justify-center text-white font-bold text-lg shadow-sm">i</div>
-          <div className="leading-none">
-            <span className="font-bold icici-maroon-text text-sm md:text-base block tracking-tight">ICICI Lombard</span>
-            <span className="text-[8px] text-slate-400 uppercase font-semibold tracking-widest">Nibhaye Vaade</span>
-          </div>
-        </div>
+        <img
+          src="/il-logo.png"
+          alt="ICICI Lombard"
+          className="h-10 w-auto object-contain"
+        />
       </div>
-      <div className="hidden xl:flex items-center gap-5 text-[11px] font-bold text-slate-600 uppercase tracking-tight">
-         <span className="hover:text-orange-500 cursor-pointer">Motor Insurance</span>
-         <span className="text-orange-500 border-b-2 border-orange-500 pb-1">Health Insurance</span>
-         <span className="hover:text-orange-500 cursor-pointer">Travel Insurance</span>
-         <span className="hover:text-orange-500 cursor-pointer">SME Insurance</span>
-         <span className="hover:text-orange-500 cursor-pointer">Corporate Insurance</span>
-         <span className="hover:text-orange-500 cursor-pointer">Renewals</span>
-         <span className="hover:text-orange-500 cursor-pointer">Claims</span>
+      <div className="hidden xl:flex items-center gap-5 text-[11px] font-bold text-white uppercase tracking-tight">
+         <span className="hover:text-white/80 cursor-pointer">Motor Insurance</span>
+         <span className="text-white border-b-2 border-white pb-1">Health Insurance</span>
+         <span className="hover:text-white/80 cursor-pointer">Travel Insurance</span>
+         <span className="hover:text-white/80 cursor-pointer">SME Insurance</span>
+         <span className="hover:text-white/80 cursor-pointer">Corporate Insurance</span>
+         <span className="hover:text-white/80 cursor-pointer">Renewals</span>
+         <span className="hover:text-white/80 cursor-pointer">Claims</span>
       </div>
     </div>
     <div className="flex items-center gap-4">
-      <div className="hidden sm:flex items-center gap-4 text-[10px] font-semibold text-slate-500 uppercase">
-        <span>Help</span>
-        <span>Info Centre</span>
-        <span>Investor Relations</span>
+      <div className="hidden sm:flex items-center gap-4 text-[10px] font-semibold text-white uppercase">
+        <span className="hover:text-white/80 cursor-pointer">Help</span>
+        <span className="hover:text-white/80 cursor-pointer">Info Centre</span>
+        <span className="hover:text-white/80 cursor-pointer">Investor Relations</span>
       </div>
       {isLoggedIn ? (
-        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-          <div className="w-6 h-6 rounded icici-maroon-bg text-white flex items-center justify-center font-bold text-[10px]">MP</div>
-          <span className="text-[10px] font-bold text-slate-700 uppercase">Namaste, Mayank</span>
+        <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg border border-white/30 backdrop-blur-sm">
+          <div className="w-6 h-6 rounded bg-white/30 text-white flex items-center justify-center font-bold text-[10px]">MP</div>
+          <span className="text-[10px] font-bold text-white uppercase">Namaste, Mayank</span>
         </div>
       ) : (
-        <button onClick={onLoginClick} className="bg-orange-500 text-white px-5 py-1.5 rounded text-[11px] font-bold uppercase hover:bg-orange-600 transition-all">Login</button>
+        <button onClick={onLoginClick} className="bg-white text-orange-600 px-5 py-1.5 rounded text-[11px] font-bold uppercase hover:bg-white/90 transition-all">Login</button>
       )}
     </div>
   </nav>
@@ -76,59 +74,6 @@ const ElevateView: React.FC = () => {
       <div className="bg-[#002B49] text-white py-3 px-6 text-center text-[10px] font-black uppercase tracking-widest">
         Health insurance just got 18% cheaper - no GST applicable!
       </div>
-
-      {/* Hero / Configurator Section */}
-      <section className="bg-slate-50 py-12 px-6 border-b">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-8 mb-10">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-2xl font-black italic icici-maroon-text tracking-tighter">elevate</div>
-                <span className="bg-slate-900 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-purple-400 animate-pulse"></span> AI Inside
-                </span>
-              </div>
-              <p className="text-slate-500 text-sm font-bold">Comprehensive health plan powered by AI that covers it all.</p>
-            </div>
-            <div className="flex flex-wrap gap-4">
-               {[
-                 { t: "Activate Booster", s: "Boost your coverage with super top-up", i: "🚀" },
-                 { t: "Activate Browser", s: "High sum insured, low premium combo", i: "💎" },
-                 { t: "Personal Protect", s: "Financial support for life impacting injuries", i: "🛡️" }
-               ].map((item, i) => (
-                 <div key={i} className="bg-white border p-4 rounded-xl flex items-center gap-3 shadow-sm hover:border-orange-200 transition-colors">
-                   <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-xl shadow-inner">{item.i}</div>
-                   <div className="leading-tight">
-                     <p className="text-[11px] font-black text-slate-800">{item.t}</p>
-                     <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tight">{item.s}</p>
-                   </div>
-                 </div>
-               ))}
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-3xl shadow-xl border grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 items-center">
-            <div className="md:col-span-2 flex items-center border-2 border-slate-100 rounded-xl p-3 bg-slate-50/30">
-               <span className="text-[10px] font-black text-slate-400 mr-4 tracking-widest">ADULTS</span>
-               <button className="w-9 h-9 bg-white border rounded-lg text-lg font-bold shadow-sm">-</button>
-               <span className="flex-1 text-center font-black text-lg">1</span>
-               <button className="w-9 h-9 bg-white border rounded-lg text-lg font-bold shadow-sm">+</button>
-            </div>
-            <div className="md:col-span-2 flex items-center border-2 border-slate-100 rounded-xl p-3 bg-slate-50/30">
-               <span className="text-[10px] font-black text-slate-400 mr-4 tracking-widest">KIDS</span>
-               <button className="w-9 h-9 bg-white border rounded-lg text-lg font-bold shadow-sm">-</button>
-               <span className="flex-1 text-center font-black text-lg">0</span>
-               <button className="w-9 h-9 bg-white border rounded-lg text-lg font-bold shadow-sm">+</button>
-            </div>
-            <input type="tel" placeholder="Mobile Number" className="border-2 border-slate-100 rounded-xl p-4 text-sm font-black focus:border-orange-500 outline-none" />
-            <button className="bg-slate-300 text-white rounded-xl p-4 font-black uppercase text-xs tracking-[0.2em] cursor-not-allowed">Get Quote</button>
-          </div>
-          <div className="flex gap-4 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-             <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked readOnly className="accent-orange-500" /> Terms and conditions</label>
-             <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked readOnly className="accent-green-500" /> Updates on WhatsApp</label>
-          </div>
-        </div>
-      </section>
 
       {/* What is Elevate Section */}
       <section className="py-24 px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
@@ -454,13 +399,14 @@ const App: React.FC = () => {
               <form onSubmit={handleLoginSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <div className="relative">
-                    <input 
-                      type="tel" 
-                      value={mobileNumber} 
-                      onChange={handleMobileChange} 
-                      placeholder="Registered Mobile" 
+                    <input
+                      type="tel"
+                      value={mobileNumber}
+                      onChange={handleMobileChange}
+                      placeholder="Registered Mobile"
                       maxLength={10}
-                      className={`w-full bg-slate-50 border-2 ${loginError ? 'border-red-400' : 'border-slate-100'} rounded-2xl py-5 px-6 font-black text-sm focus:border-orange-500 outline-none transition-all shadow-inner`} 
+                      autoFocus
+                      className={`w-full bg-slate-50 border-2 ${loginError ? 'border-red-400' : 'border-slate-100'} rounded-2xl py-5 px-6 font-black text-sm focus:border-orange-500 outline-none transition-all shadow-inner`}
                     />
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 tracking-widest">
                       {mobileNumber.length}/10
