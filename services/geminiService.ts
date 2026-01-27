@@ -2,6 +2,7 @@ import { GoogleGenAI, Modality, LiveServerMessage, Type } from "@google/genai";
 import { PRODUCT_MASTER_DATA } from "../knowledge/productMaster.ts";
 import { MAYANK_POLICY_DATA } from "../knowledge/mayankPolicy.ts";
 import { PUNE_NETWORK_HOSPITALS, HOSPITAL_SEARCH_INSTRUCTIONS } from "../knowledge/networkHospitals.ts";
+import { tryWithFallbackModel } from "../utils/retryLogic.ts";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -26,58 +27,72 @@ export const generateChatResponse = async (userMessage: string, history: {role: 
   const ai = getAI();
   const conversationContext = history.map(h => `${h.role}: ${h.content}`).join('\n');
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `
-      KNOWLEDGE BASE:
-      ${MASTER_KNOWLEDGE_BASE}
+  const contents = `
+    KNOWLEDGE BASE:
+    ${MASTER_KNOWLEDGE_BASE}
 
-      CONVERSATION HISTORY:
-      ${conversationContext}
+    CONVERSATION HISTORY:
+    ${conversationContext}
 
-      USER QUESTION:
-      ${userMessage}
-    `,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          answer: { type: Type.STRING },
-          suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ["answer", "suggestions"]
+    USER QUESTION:
+    ${userMessage}
+  `;
+
+  const config = {
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: Type.OBJECT,
+      properties: {
+        answer: { type: Type.STRING },
+        suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
       },
-      systemInstruction: `
-        You are "RIA", a high-precision Insurance AI Concierge for ICICI Lombard.
-        
-        STRICT COMMUNICATION RULES:
-        1. NO SOURCE REFERENCING: Never mention "the document," "policy schedule," "Section 3," "knowledge base," "Document 1," or "the text." 
-           - DO NOT say: "According to the document..." or "It is not listed in the sections..."
-           - DO say: "No, dental treatment is not covered."
-        
-        2. DEFINITIVE AUTHORITY: Speak like an expert who simply knows the facts. 
-           - If a benefit is not in the knowledge base, state firmly that it is NOT covered.
-           - Example: "No, dental treatment is not covered under the Elevate Health Policy." 
-        
-        3. NO HALLUCINATIONS: Use the provided Knowledge Base to find facts, but present them as your own expert knowledge.
-        
-        4. SPECIFIC IDENTITIES:
-           - This is HEALTH insurance. Correct any mention of Life insurance directly: "This is a Health Insurance policy, not a Life Insurance policy."
-           - User is Mayank Mundhra. 
-           - Base Sum Insured: ₹10,00,000.
-           - Infinite Care: Unlimited coverage for ONE claim in a lifetime.
-        
-        5. TONE: 
-           - Professional, authoritative, and concise.
-           - Multilingual (English, Hindi, Hinglish).
-           - Use bold text for key figures, names, and status.
-           
-        6. REASONING: 
-           - If a treatment is usually covered only during hospitalization (like dental in accidents), you may add that nuance, but do not mention that you found it in a specific clause.
-      `,
+      required: ["answer", "suggestions"]
     },
-  });
+    systemInstruction: `
+      You are "RIA", a high-precision Insurance AI Concierge for ICICI Lombard.
+
+      STRICT COMMUNICATION RULES:
+      1. NO SOURCE REFERENCING: Never mention "the document," "policy schedule," "Section 3," "knowledge base," "Document 1," or "the text."
+         - DO NOT say: "According to the document..." or "It is not listed in the sections..."
+         - DO say: "No, dental treatment is not covered."
+
+      2. DEFINITIVE AUTHORITY: Speak like an expert who simply knows the facts.
+         - If a benefit is not in the knowledge base, state firmly that it is NOT covered.
+         - Example: "No, dental treatment is not covered under the Elevate Health Policy."
+
+      3. NO HALLUCINATIONS: Use the provided Knowledge Base to find facts, but present them as your own expert knowledge.
+
+      4. SPECIFIC IDENTITIES:
+         - This is HEALTH insurance. Correct any mention of Life insurance directly: "This is a Health Insurance policy, not a Life Insurance policy."
+         - User is Mayank Mundhra.
+         - Base Sum Insured: ₹10,00,000.
+         - Infinite Care: Unlimited coverage for ONE claim in a lifetime.
+
+      5. TONE:
+         - Professional, authoritative, and concise.
+         - Multilingual (English, Hindi, Hinglish).
+         - Use bold text for key figures, names, and status.
+
+      6. REASONING:
+         - If a treatment is usually covered only during hospitalization (like dental in accidents), you may add that nuance, but do not mention that you found it in a specific clause.
+    `
+  };
+
+  // Try with Pro model first, fallback to Flash model if overloaded
+  const response = await tryWithFallbackModel(
+    // Primary: Gemini Pro
+    async () => ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents,
+      config
+    }),
+    // Fallback: Gemini Flash (faster, more capacity)
+    async () => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents,
+      config
+    })
+  );
 
   try {
     const result = JSON.parse(response.text || '{}');

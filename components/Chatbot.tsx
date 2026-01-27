@@ -312,6 +312,15 @@ const Chatbot: React.FC = () => {
         setSuggestions(result.suggestions || INITIAL_SUGGESTIONS);
       } catch (fallbackError) {
         console.error("Fallback error:", fallbackError);
+
+        // Show user-friendly error message when both services fail
+        const errorMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "I'm experiencing high demand right now. Please try:\n\n* Using the microphone button to ask via voice\n* Selecting one of the suggested questions below\n* Waiting a moment and resending your question",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMsg]);
       }
     } finally {
       setIsLoading(false);

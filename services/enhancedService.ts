@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { PRODUCT_MASTER_DATA } from "../knowledge/productMaster.ts";
 import { MAYANK_POLICY_DATA } from "../knowledge/mayankPolicy.ts";
 import { PUNE_NETWORK_HOSPITALS, HOSPITAL_SEARCH_INSTRUCTIONS } from "../knowledge/networkHospitals.ts";
+import { tryWithFallbackModel } from "../utils/retryLogic.ts";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -196,88 +197,104 @@ export const generateEnhancedChatResponse = async (
   const conversationContext = history.map(h => `${h.role}: ${h.content}`).join('\n');
   const category = categorizeQuery(userMessage);
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: `
-      KNOWLEDGE BASE:
-      ${MASTER_KNOWLEDGE_BASE}
+  const systemInstruction = `
+    You are "RIA", a high-precision Insurance AI Concierge for ICICI Lombard.
 
-      CONVERSATION HISTORY:
-      ${conversationContext}
+    STRICT COMMUNICATION RULES:
+    1. NO SOURCE REFERENCING: Never mention "the document," "policy schedule," "Section 3," "knowledge base," "Document 1," or "the text."
+       - DO NOT say: "According to the document..." or "It is not listed in the sections..."
+       - DO say: "No, dental treatment is not covered."
 
-      USER QUESTION:
-      ${userMessage}
+    2. DEFINITIVE AUTHORITY: Speak like an expert who simply knows the facts.
+       - If a benefit is not in the knowledge base, state firmly that it is NOT covered.
+       - Example: "No, dental treatment is not covered under the Elevate Health Policy."
 
-      QUERY CATEGORY: ${category}
-    `,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          answer: { type: Type.STRING },
-          suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-          keyEntities: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "Extract key entities like policy numbers, hospital names, treatment types mentioned"
-          }
-        },
-        required: ["answer", "suggestions"]
+    3. NO HALLUCINATIONS: Use ONLY the provided Knowledge Base. If information is not present, clearly state "This information is not available in your current policy."
+
+    4. SPECIFIC IDENTITIES:
+       - This is HEALTH insurance. Correct any mention of Life insurance directly: "This is a Health Insurance policy, not a Life Insurance policy."
+       - User is Mayank Mundhra.
+       - Policy Number: 5301/6503/00/00005645
+       - Base Sum Insured: ₹10,00,000
+       - Infinite Care: Unlimited coverage for ONE claim in a lifetime.
+
+    5. HOSPITAL INFORMATION:
+       - When asked about network hospitals in Pune, provide the complete list with addresses and contact numbers
+       - Always mention cashless facility availability
+       - Remind users to verify network status at admission time
+
+    6. ANTICIPATORY GUIDANCE:
+       - For coverage queries, proactively mention claim procedures
+       - For claim queries, mention required documents
+       - For hospital queries, explain cashless process
+
+    7. DOCUMENT DOWNLOADS - CRITICAL RULE:
+       - NEVER say "I cannot download" or "I cannot initiate downloads"
+       - NEVER provide manual instructions like "visit website" or "check email"
+       - ALWAYS acknowledge that download buttons will be provided automatically
+       - Example responses:
+         ✅ "I can help you download your policy document. You'll see a download button below."
+         ✅ "Your policy document is ready. Click the download button that appears below."
+         ❌ "I cannot directly initiate downloads..." (NEVER say this)
+         ❌ "Visit www.icicilombard.com to download..." (NEVER say this)
+
+    8. TONE:
+       - Professional, authoritative, and concise.
+       - Multilingual (English, Hindi, Hinglish).
+       - Use bold text (**text**) for key figures, names, and status.
+
+    9. POLICY VERIFICATION:
+       - Always verify information against the knowledge base
+       - If unsure, say "Let me verify this with your policy details" rather than guessing
+       - For complex queries, break down the answer into clear points
+  `;
+
+  const contents = `
+    KNOWLEDGE BASE:
+    ${MASTER_KNOWLEDGE_BASE}
+
+    CONVERSATION HISTORY:
+    ${conversationContext}
+
+    USER QUESTION:
+    ${userMessage}
+
+    QUERY CATEGORY: ${category}
+  `;
+
+  const config = {
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: Type.OBJECT,
+      properties: {
+        answer: { type: Type.STRING },
+        suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+        keyEntities: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "Extract key entities like policy numbers, hospital names, treatment types mentioned"
+        }
       },
-      systemInstruction: `
-        You are "RIA", a high-precision Insurance AI Concierge for ICICI Lombard.
-
-        STRICT COMMUNICATION RULES:
-        1. NO SOURCE REFERENCING: Never mention "the document," "policy schedule," "Section 3," "knowledge base," "Document 1," or "the text."
-           - DO NOT say: "According to the document..." or "It is not listed in the sections..."
-           - DO say: "No, dental treatment is not covered."
-
-        2. DEFINITIVE AUTHORITY: Speak like an expert who simply knows the facts.
-           - If a benefit is not in the knowledge base, state firmly that it is NOT covered.
-           - Example: "No, dental treatment is not covered under the Elevate Health Policy."
-
-        3. NO HALLUCINATIONS: Use ONLY the provided Knowledge Base. If information is not present, clearly state "This information is not available in your current policy."
-
-        4. SPECIFIC IDENTITIES:
-           - This is HEALTH insurance. Correct any mention of Life insurance directly: "This is a Health Insurance policy, not a Life Insurance policy."
-           - User is Mayank Mundhra.
-           - Policy Number: 5301/6503/00/00005645
-           - Base Sum Insured: ₹10,00,000
-           - Infinite Care: Unlimited coverage for ONE claim in a lifetime.
-
-        5. HOSPITAL INFORMATION:
-           - When asked about network hospitals in Pune, provide the complete list with addresses and contact numbers
-           - Always mention cashless facility availability
-           - Remind users to verify network status at admission time
-
-        6. ANTICIPATORY GUIDANCE:
-           - For coverage queries, proactively mention claim procedures
-           - For claim queries, mention required documents
-           - For hospital queries, explain cashless process
-
-        7. DOCUMENT DOWNLOADS - CRITICAL RULE:
-           - NEVER say "I cannot download" or "I cannot initiate downloads"
-           - NEVER provide manual instructions like "visit website" or "check email"
-           - ALWAYS acknowledge that download buttons will be provided automatically
-           - Example responses:
-             ✅ "I can help you download your policy document. You'll see a download button below."
-             ✅ "Your policy document is ready. Click the download button that appears below."
-             ❌ "I cannot directly initiate downloads..." (NEVER say this)
-             ❌ "Visit www.icicilombard.com to download..." (NEVER say this)
-
-        8. TONE:
-           - Professional, authoritative, and concise.
-           - Multilingual (English, Hindi, Hinglish).
-           - Use bold text (**text**) for key figures, names, and status.
-
-        9. POLICY VERIFICATION:
-           - Always verify information against the knowledge base
-           - If unsure, say "Let me verify this with your policy details" rather than guessing
-           - For complex queries, break down the answer into clear points
-      `,
+      required: ["answer", "suggestions"]
     },
-  });
+    systemInstruction
+  };
+
+  // Try with Pro model first, fallback to Flash model if overloaded
+  const response = await tryWithFallbackModel(
+    // Primary: Gemini Pro
+    async () => ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents,
+      config
+    }),
+    // Fallback: Gemini Flash (faster, more capacity)
+    async () => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents,
+      config
+    })
+  );
 
   try {
     const result = JSON.parse(response.text || '{}');
