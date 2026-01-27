@@ -62,7 +62,7 @@ export const FeedbackWidget: React.FC<FeedbackWidgetProps> = ({
   }
 
   const getRatingLabel = (stars: number) => {
-    const labels = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+    const labels = ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'];
     return labels[stars - 1];
   };
 
