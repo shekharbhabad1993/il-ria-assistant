@@ -534,7 +534,7 @@ const Chatbot: React.FC = () => {
                       <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-green-700">
-                      RIA is listening • Speak now
+                      RIA is listening
                     </span>
                   </div>
                 )}
@@ -546,8 +546,8 @@ const Chatbot: React.FC = () => {
                   >
                     {isLive ? (
                       <>
-                        {/* Recording indicator with pulsing animation */}
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        {/* Recording indicator */}
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                           <rect x="6" y="6" width="12" height="12" rx="2" />
                         </svg>
