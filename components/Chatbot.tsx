@@ -133,6 +133,7 @@ const Chatbot: React.FC = () => {
   const [sessionId] = useState(() => `session_${Date.now()}`);
   const [showIdlePrompt, setShowIdlePrompt] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const lastActivityRef = useRef<number>(Date.now());
 
   const outputAudioContextRef = useRef<AudioContext | null>(null);
@@ -392,6 +393,11 @@ const Chatbot: React.FC = () => {
     inputAudioContextRef.current?.close().catch(() => {}); outputAudioContextRef.current?.close().catch(() => {});
     sourcesRef.current.forEach(s => { try { s.stop(); } catch(e){} }); sourcesRef.current.clear();
     setUiInputTrans(""); setUiOutputTrans(""); nextStartTimeRef.current = 0;
+
+    // Focus the input field after stopping
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   return (
@@ -419,9 +425,9 @@ const Chatbot: React.FC = () => {
                       {isLive && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse border border-maroon-900"></span>}
                     </div>
                     <div>
-                      <h3 className="font-black text-[11px] tracking-tight leading-none mb-1">RIA Assistant</h3>
+                      <h3 className="font-black text-[11px] tracking-tight leading-none mb-1">RIA</h3>
                       <p className="text-[7px] opacity-80 uppercase font-black tracking-[0.2em]">
-                        {isLive ? "Listening..." : "Health Insurance Concierge"}
+                        Health Insurance Assistant
                       </p>
                     </div>
                   </div>
@@ -525,45 +531,43 @@ const Chatbot: React.FC = () => {
                   </div>
                 )}
 
-                {/* Listening Indicator - Shows near microphone button when recording */}
-                {isLive && (
-                  <div className="mb-3 flex items-center justify-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200 animate-in fade-in duration-300">
-                    <div className="flex gap-1">
-                      <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-1 h-4 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-green-700">
-                      RIA is listening
-                    </span>
-                  </div>
-                )}
-
                 <div className="flex gap-3 items-center">
-                  <button
-                    onClick={toggleLiveSession}
-                    className={`relative p-3 rounded-2xl transition-all shadow-md flex-shrink-0 ${isLive ? "bg-red-600 text-white" : "bg-white text-slate-400 border border-slate-200 hover:bg-slate-50"}`}
-                  >
-                    {isLive ? (
-                      <>
+                  {/* Stop Button and Listening Indicator - Same line when recording */}
+                  {isLive ? (
+                    <>
+                      <button
+                        onClick={toggleLiveSession}
+                        className="relative p-3 rounded-2xl transition-all shadow-md flex-shrink-0 bg-red-600 text-white"
+                      >
                         {/* Recording indicator */}
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></div>
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                           <rect x="6" y="6" width="12" height="12" rx="2" />
                         </svg>
-                      </>
-                    ) : (
-                      <>
+                      </button>
+                      <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200 animate-in fade-in duration-300">
+                        <div className="flex gap-1 items-center h-4">
+                          <div className="w-1 bg-green-500 rounded-full animate-[bounce_0.6s_ease-in-out_infinite]" style={{ height: '60%' }}></div>
+                          <div className="w-1 bg-green-500 rounded-full animate-[bounce_0.6s_ease-in-out_infinite]" style={{ animationDelay: '0.2s', height: '100%' }}></div>
+                          <div className="w-1 bg-green-500 rounded-full animate-[bounce_0.6s_ease-in-out_infinite]" style={{ animationDelay: '0.4s', height: '80%' }}></div>
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-green-700">
+                          listening
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={toggleLiveSession}
+                        className="relative p-3 rounded-2xl transition-all shadow-md flex-shrink-0 bg-white text-slate-400 border border-slate-200 hover:bg-slate-50"
+                      >
                         {/* Microphone icon when not recording */}
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
                         </svg>
-                      </>
-                    )}
-                  </button>
-                  {!isLive && (
-                    <>
+                      </button>
                       <input
+                        ref={inputRef}
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
