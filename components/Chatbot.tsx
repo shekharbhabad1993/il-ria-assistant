@@ -135,6 +135,7 @@ const Chatbot: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastActivityRef = useRef<number>(Date.now());
+  const [micPermissionDenied, setMicPermissionDenied] = useState(false);
 
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
@@ -186,8 +187,9 @@ const Chatbot: React.FC = () => {
 
   // Auto-enable microphone when chatbot is opened, disable when minimized
   useEffect(() => {
-    if (isOpen && !showIntro && !isLive) {
+    if (isOpen && !showIntro && !isLive && !micPermissionDenied) {
       // Automatically start live session when chatbot is opened (after intro)
+      // Only auto-start if permission not previously denied
       toggleLiveSession();
     } else if (!isOpen && isLive) {
       // Stop live session when chatbot is minimized
@@ -327,12 +329,76 @@ const Chatbot: React.FC = () => {
     }
   };
 
+  // Check microphone permission status
+  const checkMicrophonePermission = async (): Promise<'granted' | 'prompt' | 'denied'> => {
+    // Try Permissions API first (Chrome/Edge supported)
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        return result.state;
+      } catch (e) {
+        // Firefox/Safari don't support microphone query - fallback to 'prompt'
+      }
+    }
+    return 'prompt';
+  };
+
+  // Generate browser-specific error messages for microphone access issues
+  const getMicrophoneErrorMessage = (errorName: string): string => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+    const isEdge = userAgent.includes('edg');
+    const isFirefox = userAgent.includes('firefox');
+    const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
+
+    if (errorName === 'NotAllowedError') {
+      let browserInstructions = '';
+      if (isChrome) {
+        browserInstructions = '**Chrome:** Click the camera/microphone icon in the address bar, then select "Always allow" for microphone access.';
+      } else if (isEdge) {
+        browserInstructions = '**Edge:** Click the lock icon in the address bar, then change microphone permissions to "Allow".';
+      } else if (isFirefox) {
+        browserInstructions = '**Firefox:** Click the microphone icon in the address bar, then select "Allow" and check "Remember this decision".';
+      } else if (isSafari) {
+        browserInstructions = '**Safari:** Go to Safari > Settings for This Website, then change Microphone to "Allow".';
+      } else {
+        browserInstructions = 'Click the address bar icon and enable microphone permissions for this site.';
+      }
+
+      return `I need microphone access to respond via voice.\n\n**How to enable:**\n${browserInstructions}\n\nAfter enabling permissions, click the microphone button again to start.`;
+    }
+
+    if (errorName === 'NotFoundError') {
+      return 'No microphone detected on your device.\n\n* Check that a microphone is connected\n* Verify your device has a built-in microphone\n* Try refreshing the page\n\nYou can still use text chat to ask questions.';
+    }
+
+    if (errorName === 'NotReadableError') {
+      return 'Your microphone is currently in use by another application.\n\n* Close other apps using your microphone (Zoom, Teams, etc.)\n* Restart your browser\n* Try again after closing conflicting apps\n\nYou can use text chat in the meantime.';
+    }
+
+    return 'Unable to access microphone.\n\n* Check browser permissions\n* Ensure microphone is connected\n* Refresh the page and try again\n\nYou can still use text chat to ask your questions.';
+  };
+
   const toggleLiveSession = async () => {
     if (showIntro) setShowIntro(false);
     if (isLive) { stopLiveSession(); return; }
     if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) { await window.aistudio.openSelectKey(); }
 
     try {
+      // Pre-flight permission check to avoid calling getUserMedia if already denied
+      const permissionState = await checkMicrophonePermission();
+      if (permissionState === 'denied') {
+        setMicPermissionDenied(true);
+        const errorMsg: Message = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: getMicrophoneErrorMessage('NotAllowedError'),
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        return;
+      }
+
       setIsLive(true);
       const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -340,6 +406,9 @@ const Chatbot: React.FC = () => {
       outputAudioContextRef.current = outputCtx;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+
+      // Permission granted successfully, clear denial state
+      setMicPermissionDenied(false);
 
       const sessionPromise = connectLive({
         onMessage: async (message) => {
@@ -391,7 +460,28 @@ const Chatbot: React.FC = () => {
         }
       });
       sessionPromiseRef.current = sessionPromise;
-    } catch (err) { stopLiveSession(); }
+    } catch (err: any) {
+      stopLiveSession();
+
+      // Differentiate error types for better user feedback
+      const errorName = err?.name || 'UnknownError';
+
+      if (errorName === 'NotAllowedError') {
+        setMicPermissionDenied(true);
+      }
+
+      // Display user-friendly error message
+      const errorMsg: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: getMicrophoneErrorMessage(errorName),
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+
+      // Log for debugging
+      console.error('Microphone access error:', errorName, err);
+    }
   };
 
   const stopLiveSession = () => {
@@ -420,7 +510,7 @@ const Chatbot: React.FC = () => {
               <KPointVideo
                 className="w-full h-full"
                 scriptUrl="https://assets.kpoint.com/assets/orca/media/embed/player-silk.js"
-                htmlSnippet={`<div style='width:100%;height:100%;' data-video-host='ktpl.kpoint.com' data-kvideo-id='gcc-5f2ec840-e32c-4184-bf3e-af37ca12d0d7' data-ar='9:16' data-video-params='{"autoplay":"true", "mute":"false", "hide_controls": "true"}'></div>`}
+                htmlSnippet={`<div style='width:100%;height:100%;' data-video-host='ktpl.kpoint.com' data-kvideo-id='gcc-5f2ec840-e32c-4184-bf3e-af37ca12d0d7' data-ar='9:16' data-video-params='{"autoplay":"true", "mute":"false", "playercontrols": {"hide":"all"}}'></div>`}
               />             
             </div>
           ) : (
@@ -568,12 +658,25 @@ const Chatbot: React.FC = () => {
                     <>
                       <button
                         onClick={toggleLiveSession}
-                        className="relative p-3 rounded-2xl transition-all shadow-md flex-shrink-0 bg-white text-slate-400 border border-slate-200 hover:bg-slate-50"
+                        className={`relative p-3 rounded-2xl transition-all shadow-md flex-shrink-0 ${
+                          micPermissionDenied
+                            ? 'bg-red-50 text-red-500 border border-red-300'
+                            : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'
+                        }`}
+                        title={micPermissionDenied ? 'Microphone access denied - click for instructions' : 'Start voice chat'}
                       >
                         {/* Microphone icon when not recording */}
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
                         </svg>
+                        {/* Red indicator badge when permission denied */}
+                        {micPermissionDenied && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                        )}
                       </button>
                       <input
                         ref={inputRef}
