@@ -36,7 +36,12 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-sm bg-white rounded-[32px] shadow-2xl p-10 border border-slate-100">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight ">KPOINT Auth. </h1>
+          <img
+            src="https://ktpl.kpoint.com/media/data.ap-southeast-1.kpoint/ktpl.kpoint.in/ktpl.kpoint.com/logos/v1774445460000/logo.jpg"
+            alt="Logo"
+            className="h-16 w-auto object-contain mx-auto mb-5"
+          />
+          <h1 className="text-xl text-slate-800 tracking-tight">Sign in with your account</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -45,7 +50,7 @@ export default function LoginPage() {
               htmlFor="clientId"
               className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1"
             >
-              Client ID
+             Username
             </label>
             <input
               id="clientId"
@@ -64,7 +69,7 @@ export default function LoginPage() {
               htmlFor="clientSecret"
               className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1"
             >
-              Client Secret
+              Password
             </label>
             <input
               id="clientSecret"
@@ -93,10 +98,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <p className="text-center text-[9px] text-slate-400 font-black uppercase tracking-[0.3em] mt-8">
-          Nibhaye Vaade Since 2001
-        </p>
       </div>
     </div>
   );
