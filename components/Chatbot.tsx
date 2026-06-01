@@ -106,7 +106,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
         <div className="mt-4 rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-black">
           <KPointVideo
             scriptUrl="https://ktpl.kpoint.com/assets/orca/media/embed/player-silk.js"
-            htmlSnippet={`<div data-video-host='ktpl.kpoint.com' data-kvideo-id='gcc-e84f5774-f9d1-445f-a2ed-db7ba282c77d' data-samesite=true style='width:100%'></div>`}
+            htmlSnippet={`<div data-video-host='ktpl.kpoint.com' data-kvideo-id='-e84f5774-f9dgcc1-445f-a2ed-db7ba282c77d' data-samesite=true style='width:100%'></div>`}
           />
         </div>
       )}
@@ -159,8 +159,7 @@ const Chatbot: React.FC = () => {
           console.log("kPlayer1 detected, attaching kapsuleEnded listener");
           kPlayer.addEventListener("kapsuleEnded", (e: any) => {
             console.log("Video has ended ", e);
-            // Minimize the chatbot automatically
-            setIsOpen(false);
+            // Dismiss the intro video and reveal the chat bot (keep window open)
             setShowIntro(false);
           });
           clearInterval(checkInterval);
@@ -511,7 +510,15 @@ const Chatbot: React.FC = () => {
                 className="w-full h-full"
                 scriptUrl="https://assets.kpoint.com/assets/orca/media/embed/player-silk.js"
                 htmlSnippet={`<div style='width:100%;height:100%;' data-video-host='ktpl.kpoint.com' data-kvideo-id='gcc-5f2ec840-e32c-4184-bf3e-af37ca12d0d7' data-ar='9:16' data-video-params='{"autoplay":"true", "mute":"false", "playercontrols": {"hide":"all"}}'></div>`}
-              />             
+              />
+              {/* Skip floating button - dismiss video and reveal the bot */}
+              <button
+                onClick={() => setShowIntro(false)}
+                className="absolute top-3 right-3 z-[60] flex items-center gap-1 bg-black/55 hover:bg-black/75 backdrop-blur-md text-white text-[11px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 transition-all hover:scale-105 active:scale-95 shadow-lg"
+              >
+                Skip
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+              </button>
             </div>
           ) : (
             <>
